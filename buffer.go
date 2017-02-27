@@ -1,5 +1,7 @@
 package litebuf
 
+import "strconv"
+
 const (
 	cacheAlign   = 64 // cache line size
 	preallocSize = 32 // preallocSize >= (cacheAlign / 2)
@@ -24,6 +26,27 @@ func (b *Buffer) Len() int {
 
 func (b *Buffer) Cap() int {
 	return len(b.buf)
+}
+
+func (b *Buffer) Bytes() []byte {
+	return b.buf[:b.p]
+}
+
+func (b *Buffer) String() string {
+	return string(b.Bytes())
+}
+
+func (b *Buffer) Reset() {
+	b.p = 0
+	b.buf = b.buf[:cap(b.buf)]
+}
+
+func (b *Buffer) Trim(n int) {
+	if b.p > n {
+		b.p -= n
+	} else {
+		b.p = 0
+	}
 }
 
 func (b *Buffer) Resize(n int) {
@@ -55,6 +78,21 @@ func (b *Buffer) Reserve(n int) []byte {
 	return b.buf[p:b.p]
 }
 
+func (b *Buffer) AppendInt(i int64, base int) {
+	b.buf = strconv.AppendInt(b.buf[:b.p], i, base)
+	b.p = len(b.buf)
+}
+
+func (b *Buffer) AppendUint(u uint64, base int) {
+	b.buf = strconv.AppendUint(b.buf[:b.p], u, base)
+	b.p = len(b.buf)
+}
+
+func (b *Buffer) AppendFloat(f float64, fmt byte, p int, bits int) {
+	b.buf = strconv.AppendFloat(b.buf[:b.p], f, fmt, p, bits)
+	b.p = len(b.buf)
+}
+
 func (b *Buffer) WriteByte(c byte) {
 	if b.p >= len(b.buf) {
 		b.Resize(b.p + 8)
@@ -79,17 +117,4 @@ func (b *Buffer) Write(p []byte) (int, error) {
 	n := copy(b.buf[b.p:b.p+len(p)], p)
 	b.p += n
 	return n, nil
-}
-
-func (b *Buffer) Reset() {
-	b.p = 0
-	b.buf = b.buf[:cap(b.buf)]
-}
-
-func (b *Buffer) Bytes() []byte {
-	return b.buf[:b.p]
-}
-
-func (b *Buffer) String() string {
-	return string(b.Bytes())
 }
