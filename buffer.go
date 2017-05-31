@@ -1,6 +1,8 @@
 package litebuf
 
-import "strconv"
+import (
+	"strconv"
+)
 
 const (
 	cacheAlign   = 64 // cache line size
@@ -56,6 +58,7 @@ func (b *Buffer) Resize(n int) {
 			b.p = n
 		}
 	} else if n <= preallocSize {
+		copy(b.pre[:], b.buf[:b.p])
 		b.buf = b.pre[:]
 	} else {
 		if n <= pageSize/2 {
