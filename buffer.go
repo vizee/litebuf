@@ -2,9 +2,15 @@ package litebuf
 
 import (
 	"strconv"
+	"unicode/utf8"
 )
 
 const (
+	hexdigits = "0123456789abcdef"
+
+	noescchr = '0'
+	esctable = `00000000btn0fr00000000000000000000"000000000000/00000000000000000000000000000000000000000000\00000000000000000000000000000000000`
+
 	cacheAlign   = 64 // cache line size
 	preallocSize = 32 // preallocSize >= (cacheAlign / 2)
 
@@ -101,6 +107,51 @@ func (b *Buffer) WriteByte(c byte) {
 		b.Resize(b.p + 8)
 	}
 	b.buf[b.p] = c
+	b.p++
+}
+
+func (b *Buffer) WriteQuote(s string, unicode bool) {
+	if b.p+len(s)+2 > len(b.buf) {
+		b.Resize(b.p + len(s) + 2)
+	}
+	b.buf[b.p] = '"'
+	b.p++
+	p := 0
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c < utf8.RuneSelf {
+			if esctable[c] != noescchr {
+				if n := i - p + 2; b.p+n > len(b.buf) {
+					b.Resize(b.p + n)
+				}
+				b.p += copy(b.buf[b.p:], s[p:i])
+				b.buf[b.p] = '\\'
+				b.buf[b.p+1] = esctable[c]
+				b.p += 2
+				p = i + 1
+			}
+		} else if unicode {
+			if n := i - p + 6; b.p+n > len(b.buf) {
+				b.Resize(b.p + n)
+			}
+			b.p += copy(b.buf[b.p:], s[p:i])
+			r, n := utf8.DecodeRuneInString(s[i:])
+			b.buf[b.p] = '\\'
+			b.buf[b.p+1] = 'u'
+			b.buf[b.p+2] = hexdigits[(r>>12)&0xf]
+			b.buf[b.p+3] = hexdigits[(r>>8)&0xf]
+			b.buf[b.p+4] = hexdigits[(r>>4)&0xf]
+			b.buf[b.p+5] = hexdigits[r&0xf]
+			b.p += 6
+			i += n - 1
+			p = i + 1
+		}
+	}
+	if n := len(s) - p + 1; b.p+n > len(b.buf) {
+		b.Resize(b.p + n)
+	}
+	b.p += copy(b.buf[b.p:], s[p:])
+	b.buf[b.p] = '"'
 	b.p++
 }
 
