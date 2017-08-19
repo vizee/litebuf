@@ -33,7 +33,7 @@ func (b *Buffer) Len() int {
 }
 
 func (b *Buffer) Cap() int {
-	return len(b.buf)
+	return cap(b.buf)
 }
 
 func (b *Buffer) Bytes() []byte {
@@ -136,13 +136,15 @@ func (b *Buffer) WriteQuote(s string, unicode bool) {
 			}
 			b.p += copy(b.buf[b.p:], s[p:i])
 			r, n := utf8.DecodeRuneInString(s[i:])
-			b.buf[b.p] = '\\'
-			b.buf[b.p+1] = 'u'
-			b.buf[b.p+2] = hexdigits[(r>>12)&0xf]
-			b.buf[b.p+3] = hexdigits[(r>>8)&0xf]
-			b.buf[b.p+4] = hexdigits[(r>>4)&0xf]
-			b.buf[b.p+5] = hexdigits[r&0xf]
+			buf := b.buf[b.p:]
 			b.p += 6
+			_ = buf[5]
+			buf[0] = '\\'
+			buf[1] = 'u'
+			buf[2] = hexdigits[(r>>12)&0xf]
+			buf[3] = hexdigits[(r>>8)&0xf]
+			buf[4] = hexdigits[(r>>4)&0xf]
+			buf[5] = hexdigits[r&0xf]
 			i += n - 1
 			p = i + 1
 		}
