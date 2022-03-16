@@ -87,27 +87,19 @@ func (b *Buffer) Reserve(n int) []byte {
 	return b.buf[p:b.p]
 }
 
-func (b *Buffer) AppendInt(i int64, base int) {
+func (b *Buffer) WriteInt(i int64, base int) {
 	b.buf = strconv.AppendInt(b.buf[:b.p], i, base)
 	b.p = len(b.buf)
 }
 
-func (b *Buffer) AppendUint(u uint64, base int) {
+func (b *Buffer) WriteUint(u uint64, base int) {
 	b.buf = strconv.AppendUint(b.buf[:b.p], u, base)
 	b.p = len(b.buf)
 }
 
-func (b *Buffer) AppendFloat(f float64, fmt byte, p int, bits int) {
+func (b *Buffer) WriteFloat(f float64, fmt byte, p int, bits int) {
 	b.buf = strconv.AppendFloat(b.buf[:b.p], f, fmt, p, bits)
 	b.p = len(b.buf)
-}
-
-func (b *Buffer) WriteByte(c byte) {
-	if b.p >= len(b.buf) {
-		b.Resize(b.p + 8)
-	}
-	b.buf[b.p] = c
-	b.p++
 }
 
 func (b *Buffer) WriteQuote(s string, unicode bool) {
@@ -155,6 +147,15 @@ func (b *Buffer) WriteQuote(s string, unicode bool) {
 	b.p += copy(b.buf[b.p:], s[p:])
 	b.buf[b.p] = '"'
 	b.p++
+}
+
+func (b *Buffer) WriteByte(c byte) error {
+	if b.p >= len(b.buf) {
+		b.Resize(b.p + 8)
+	}
+	b.buf[b.p] = c
+	b.p++
+	return nil
 }
 
 func (b *Buffer) WriteString(s string) (int, error) {
