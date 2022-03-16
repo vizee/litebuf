@@ -3,6 +3,7 @@ package litebuf
 import (
 	"strconv"
 	"unicode/utf8"
+	"unsafe"
 )
 
 const (
@@ -42,6 +43,11 @@ func (b *Buffer) Bytes() []byte {
 
 func (b *Buffer) String() string {
 	return string(b.Bytes())
+}
+
+func (b *Buffer) UnsafeString() string {
+	s := b.Bytes()
+	return *(*string)(unsafe.Pointer(&s))
 }
 
 func (b *Buffer) Reset() {
